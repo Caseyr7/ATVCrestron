@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net472</TargetFramework>
+		<PlatformTarget>x86</PlatformTarget>
+		<LangVersion>8.0</LangVersion>
+		<AssemblyName>AppleTVSetup</AssemblyName>
+		<RootNamespace>AppleTVSetup</RootNamespace>
+		<OutputType>Library</OutputType>
+		<Nullable>enable</Nullable>
+		<NoWarn>CS0162</NoWarn>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Crestron.SimplSharp.SDK.Library" Version="2.21.237" />
+	</ItemGroup>
+	<Target Name="CopyClzToUsrsplus" AfterTargets="Build">
+		<PropertyGroup>
+			<UsrsplusDir>C:\Users\CaseyR\OneDrive - DATAVOX\Crestron\Simpl\Usrsplus</UsrsplusDir>
+		</PropertyGroup>
+		<Copy SourceFiles="$(OutputPath)$(AssemblyName).clz" DestinationFolder="$(UsrsplusDir)" />
+		<Message Text="Copied $(AssemblyName).clz to $(UsrsplusDir)" Importance="high" />
+	</Target>
+</Project>

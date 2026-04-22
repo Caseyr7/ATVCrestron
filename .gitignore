@@ -1,0 +1,43 @@
+# Visual Studio
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.VC.db
+
+# Build output
+*.dll
+*.exe
+*.clz
+*.ilk
+*.meta
+
+# Resharper / Rider
+_ReSharper*/
+*.DotSettings.user
+
+# OS cruft
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Python byproducts (for the workflow's pip step running locally during dev)
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# Local env
+.env
+*.local
+
+# Misc build outputs from the AppleTVSetup project
+SPlsWork/
