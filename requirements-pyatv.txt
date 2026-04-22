@@ -1,0 +1,44 @@
+# Pinned dependency set for pyatv 0.15.1 on Crestron CP4 (Python 3.8.2, armv7l).
+#
+# 0.15.1 is the LAST pyatv release that supports Python 3.8 - all later versions
+# require Python >=3.9 which the CP4 firmware does not provide.
+#
+# Version pins are chosen to:
+#   - satisfy pyatv 0.15.1's requires_dist (aiohttp<5,>=3.8.3 etc.)
+#   - stay on the pure-Python branch of packages that went Cython/Rust in newer majors
+#     (pydantic<2 avoids Rust, protobuf<5 stays pure-Python)
+#   - prefer cp38-abi3 wheels where they exist (cryptography 46.x)
+#
+# miniaudio is intentionally omitted - pyatv imports it but the installer stubs
+# it out since we do not stream audio on the CP4.
+
+pyatv==0.15.1
+
+# HTTP stack (aiohttp builds C ext in the workflow; pure-Python fallback exists at runtime if needed)
+aiohttp>=3.9.5,<4
+async-timeout>=4.0.3
+yarl>=1.9.4
+multidict>=6.0.5
+frozenlist>=1.4.1
+aiosignal>=1.3.1
+aiohappyeyeballs>=2.3.0
+
+# Crypto / pairing
+cryptography>=46.0.0,<47
+chacha20poly1305-reuseable>=0.13.2
+srptools>=1.0.1
+
+# mDNS discovery (builds C ext in the workflow)
+zeroconf>=0.131.0,<0.140.0
+ifaddr>=0.2.0
+
+# Data model / parsing
+protobuf>=4.25.3,<5
+pydantic>=1.10.13,<2
+mediafile>=0.12.0
+
+# Generic
+requests>=2.31.0
+tabulate>=0.9.0
+attrs>=23.2.0
+charset-normalizer>=3.3.2
