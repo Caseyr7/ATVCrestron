@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - '.github/workflows/build-pyatv-deps.yml'
+      - '.github/workflows/build-pyatv-inside-container.sh'
       - 'requirements-pyatv.txt'
 
 jobs:
@@ -22,66 +23,21 @@ jobs:
         with:
           platforms: arm
 
+      - name: Make build script executable
+        run: chmod +x .github/workflows/build-pyatv-inside-container.sh
+
       - name: Build deps inside python:3.8-bullseye arm/v7
         run: |
           set -euxo pipefail
           mkdir -p "${GITHUB_WORKSPACE}/out/deps"
 
-          # Matches Crestron Python 3.8.x glibc 2.31 (Debian bullseye).
+          # python:3.8-bullseye is glibc 2.31 - matches Crestron Python 3.8.x.
+          # The build script is mounted read-only and executed as the container's command.
           docker run --rm --platform linux/arm/v7 \
             -v "${GITHUB_WORKSPACE}/requirements-pyatv.txt:/req.txt:ro" \
+            -v "${GITHUB_WORKSPACE}/.github/workflows/build-pyatv-inside-container.sh:/build.sh:ro" \
             -v "${GITHUB_WORKSPACE}/out/deps:/deps" \
-            python:3.8-bullseye bash -eux <<'EOF'
-              # Build toolchain - needed for aiohttp + zeroconf C extensions.
-              # Cryptography 46.x has a pre-built cp38-abi3 armv7l wheel so no Rust needed.
-              export DEBIAN_FRONTEND=noninteractive
-              apt-get update
-              apt-get install -y --no-install-recommends \
-                  gcc g++ make \
-                  libffi-dev libssl-dev \
-                  pkg-config
-              rm -rf /var/lib/apt/lists/*
-
-              # Upgrade pip to a recent version that handles modern wheel tags.
-              pip install --no-cache-dir --upgrade 'pip<25' 'setuptools<70' 'wheel<1'
-
-              # Install everything into /deps as a flat import root.
-              # --no-compile skips .pyc generation (the installer will regenerate on the target).
-              pip install --no-cache-dir --no-compile \
-                  --target /deps \
-                  -r /req.txt
-
-              # Rename ABI suffix: Debian bullseye arm/v7 produces gnueabihf.so
-              # but Crestron Python 3.8.13 expects gnueabi.so (no hf). The binary
-              # is identical - only the filename tag differs.
-              cd /deps
-              find . -name '*.cpython-38-arm-linux-gnueabihf.so' -print0 | while IFS= read -r -d '' f; do
-                  new="${f%gnueabihf.so}gnueabi.so"
-                  mv -v "$f" "$new"
-              done
-
-              # Trim metadata and tests - each MB matters over SFTP to a CP4.
-              find . -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true
-              find . -type d -name '*.dist-info' -exec rm -rf {} + 2>/dev/null || true
-              find . -type d -name '*.egg-info' -exec rm -rf {} + 2>/dev/null || true
-              find . -type d -name 'tests' -exec rm -rf {} + 2>/dev/null || true
-              find . -type d -name 'test' -exec rm -rf {} + 2>/dev/null || true
-              find . -name '*.pyc' -delete 2>/dev/null || true
-              find . -name '*.pyo' -delete 2>/dev/null || true
-
-              # Remove miniaudio if pip pulled it in - the Crestron installer stubs it.
-              rm -rf miniaudio miniaudio-*.dist-info 2>/dev/null || true
-
-              # Sanity: verify the critical .so files have the right ABI name now.
-              echo '=== .so files in /deps (should all be gnueabi, NOT gnueabihf) ==='
-              find . -name '*.so' | sort
-              echo '=== total size ==='
-              du -sh /deps
-
-              # Files are root-owned inside the container; make them world-readable
-              # so the GitHub runner user can upload them as an artifact.
-              chmod -R u+rwX,go+rX /deps
-          EOF
+            python:3.8-bullseye /build.sh
 
           # Write a manifest so the user can see exactly what landed in the zip.
           (cd "${GITHUB_WORKSPACE}/out/deps" && find . -maxdepth 2 -type d | sort) \
@@ -89,6 +45,17 @@ jobs:
           echo '---' >> "${GITHUB_WORKSPACE}/out/MANIFEST.txt"
           (cd "${GITHUB_WORKSPACE}/out/deps" && find . -name '*.so' | sort) \
             >> "${GITHUB_WORKSPACE}/out/MANIFEST.txt"
+
+      - name: Fail build if /deps is empty
+        run: |
+          set -eu
+          count=$(find "${GITHUB_WORKSPACE}/out/deps" -mindepth 1 -maxdepth 1 | wc -l)
+          echo "Top-level entries in out/deps: ${count}"
+          if [ "${count}" -lt 5 ]; then
+            echo "::error::out/deps has fewer than 5 top-level entries - build probably failed silently"
+            ls -la "${GITHUB_WORKSPACE}/out/deps" || true
+            exit 1
+          fi
 
       - name: Fail build if any .so still has gnueabihf suffix
         run: |

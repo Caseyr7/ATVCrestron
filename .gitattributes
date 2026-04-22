@@ -1,0 +1,10 @@
+# Shell scripts must be LF-only even when created/edited on Windows, or
+# Linux will fail with "bad interpreter: /bin/bash^M" when it runs them.
+*.sh text eol=lf
+
+# Same goes for YAML workflow files (GH Actions parses them on Linux).
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Python scripts that run on the Crestron processor must also be LF.
+*.py text eol=lf

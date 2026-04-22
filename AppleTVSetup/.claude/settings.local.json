@@ -158,7 +158,9 @@
       "PowerShell($resp = Invoke-RestMethod -Uri \"https://pypi.org/pypi/pyatv/0.15.1/json\"; Write-Output \"=== pyatv 0.15.1 requires_python: ===\"; Write-Output $resp.info.requires_python; Write-Output \"`n=== requires_dist: ===\"; $resp.info.requires_dist | ForEach-Object { Write-Output $_ })",
       "WebFetch(domain:www.piwheels.org)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "PowerShell(gh --version 2>&1)",
+      "PowerShell(gh auth status 2>&1)"
     ]
   }
 }
